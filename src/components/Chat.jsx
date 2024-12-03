@@ -88,7 +88,7 @@ function Chat({ onQueryResults }, ref) {  // Add ref parameter
         { text: "Fetching details...", isUser: false, isLoading: true }
       ]);
 
-      const response = await fetch('http://localhost:8000/api/run-query', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/run-query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

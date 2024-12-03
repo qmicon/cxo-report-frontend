@@ -142,7 +142,7 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
             password: formData.password
           };
 
-      const response = await fetch('http://localhost:8000/api/configure-db', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/configure-db`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
