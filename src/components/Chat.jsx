@@ -1,4 +1,4 @@
-import React, { useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useImperativeHandle, forwardRef, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { RiSendPlaneFill } from 'react-icons/ri';
 
@@ -8,6 +8,9 @@ const ChatContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
 `;
 
 const ChatHeader = styled.div`
@@ -20,6 +23,18 @@ const ChatMessages = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  scroll-behavior: smooth;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 3px;
+  }
 `;
 
 const Message = styled.div`
@@ -27,6 +42,7 @@ const Message = styled.div`
   padding: 10px;
   border-radius: 8px;
   max-width: 80%;
+  word-break: break-word;
   ${props => props.isUser ? `
     background: #007bff;
     color: white;
@@ -36,7 +52,8 @@ const Message = styled.div`
     color: #e6e6e6;
     font-family: monospace;
     white-space: pre-wrap;
-    overflow-x: auto;
+    width: calc(100% - 20px);
+    max-width: calc(100% - 20px);
   ` : `
     background: #f0f2f5;
     color: black;
@@ -77,6 +94,7 @@ function Chat({ onQueryResults }, ref) {  // Add ref parameter
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
   const handleMessage = async (message) => {
     if (!message.trim()) return;
@@ -122,6 +140,16 @@ function Chat({ onQueryResults }, ref) {  // Add ref parameter
     }
   };
 
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   useImperativeHandle(ref, () => ({
     handleExternalMessage: handleMessage
   }));
@@ -140,13 +168,14 @@ function Chat({ onQueryResults }, ref) {  // Add ref parameter
             {message.text}
           </Message>
         ))}
+        <div ref={messagesEndRef} />
       </ChatMessages>
       <InputContainer>
         <Input 
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask a question about your data..."
-          onKeyPress={(e) => e.key === 'Enter' && handleMessage(input)}
+          onKeyUp={(e) => e.key === 'Enter' && handleMessage(input)}
         />
         <SendButton onClick={() => handleMessage(input)}>
           <RiSendPlaneFill size={20} />
