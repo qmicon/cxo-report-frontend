@@ -179,8 +179,56 @@ function App() {
   };
 
   const getDisplayData = (data, limit) => {
-    if (!data || data.length <= limit) return data;
-    return data.slice(0, limit);
+    if (!data || !data.length) return [];
+
+    // Get columns with any valid data
+    const columnsWithData = data[0].map((_, colIndex) => {
+      return data.some(row => {
+        const cell = row[colIndex];
+        if (cell === null || cell === undefined || cell === '') return false;
+        const numValue = parseFloat(cell);
+        return isNaN(numValue) || numValue !== 0;
+      });
+    });
+
+    const idColumnIndices = data.columns
+      ?.map((col, idx) => col.toLowerCase().includes('id') ? idx : -1)
+      .filter(idx => idx !== -1) || [];
+
+    let validRows = [];
+    let currentBlock = [];
+
+    for (const row of data) {
+      const isValidRow = row.every((cell, idx) => {
+        // Always accept ID columns
+        if (idColumnIndices.includes(idx)) return true;
+        // Skip validation for columns that are all empty/zero
+        if (!columnsWithData[idx]) return true;
+        
+        if (cell === null || cell === undefined || cell === '') return false;
+        const numValue = parseFloat(cell);
+        return isNaN(numValue) || numValue !== 0;
+      });
+
+      if (isValidRow) {
+        currentBlock.push(row);
+        if (currentBlock.length >= limit) {
+          validRows = currentBlock.slice(0, limit);
+          break;
+        }
+      } else {
+        if (currentBlock.length > validRows.length) {
+          validRows = [...currentBlock];
+        }
+        currentBlock = [];
+      }
+    }
+
+    if (currentBlock.length > validRows.length) {
+      validRows = currentBlock.slice(0, limit);
+    }
+
+    return validRows;
   };
 
   return (
