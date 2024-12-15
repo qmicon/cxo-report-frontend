@@ -1,7 +1,21 @@
 // components/Sidebar.jsx
 import styled from 'styled-components';
 import { RiDatabaseLine, RiCheckLine, RiTableLine, RiBarChartLine } from 'react-icons/ri';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const CLOUD_PLATFORMS = [
+  'Snowflake',
+  'Amazon Redshift',
+  'Google BigQuery',
+  'Azure Synapse',
+  'SAP HANA',
+  'Databricks Delta Lake',
+  'Starburst Trino',
+  'Presto',
+  'Oracle ADW',
+  'Teradata Vantage',
+  'Dremio'
+];
 
 const Nav = styled.nav`
   background: #1a2233;
@@ -92,6 +106,34 @@ const ConnectionStatus = styled.div`
   margin-bottom: 12px;
 `;
 
+const LoadingSpinner = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  
+  .spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .message {
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+  }
+`;
+
 function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
   const [showConfig, setShowConfig] = useState(false);
   const [dbType, setDbType] = useState('default');
@@ -101,13 +143,34 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
     database: '',
     username: '',
     password: '',
-    endpoint: ''
+    platform: ''
   });
-  const [selectedDb, setSelectedDb] = useState('sample_db');
+  const [selectedDb, setSelectedDb] = useState('northwind.db');
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [loadingStage, setLoadingStage] = useState(0);
+  
+  const loadingMessages = [
+    'Connecting to database...',
+    'Analyzing database structure...',
+    'Generating table descriptions...',
+    'Creating knowledge graph in RAG...',
+    'Generating semantic embeddings...',
+    'Finalizing setup...'
+  ];
 
-  const defaultDatabases = ['sample_db', 'revenue_db', 'analytics_db'];
+  useEffect(() => {
+    if (isLoading && loadingStage < loadingMessages.length - 1) {
+      const timer = setTimeout(() => {
+        setLoadingStage(prev => prev + 1);
+      }, 1000); // Increased to 3.5 seconds per message
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, loadingStage]);
+
+  const defaultDatabases = ['northwind.db'];
 
   const handleInputChange = (e) => {
     setFormData({
@@ -131,6 +194,12 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
     if (!validateForm()) return;
 
     try {
+      setIsLoading(true);
+      setLoadingStage(0);
+      
+      // Artificial delay before making the API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       const config = dbType === 'default' 
         ? { type: 'default', database: selectedDb }
         : {
@@ -153,6 +222,8 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
       const data = await response.json();
       
       if (data.status === 'success') {
+        // Add artificial delay after success before closing
+        await new Promise(resolve => setTimeout(resolve, 5000));
         setIsConnected(true);
         setError('');
         onTablesUpdate(data.table_descriptions);
@@ -164,6 +235,9 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
     } catch (err) {
       setError('Failed to connect to database: ' + err.message);
       setIsConnected(false);
+    } finally {
+      setIsLoading(false);
+      setLoadingStage(0);
     }
   };
 
@@ -245,6 +319,18 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
             </Select>
           ) : (
             <>
+              <Select
+                name="platform"
+                value={formData.platform}
+                onChange={handleInputChange}
+              >
+                <option value="">Select Cloud Platform</option>
+                {CLOUD_PLATFORMS.map(platform => (
+                  <option key={platform} value={platform}>
+                    {platform}
+                  </option>
+                ))}
+              </Select>
               <Input 
                 placeholder="Host"
                 name="host"
@@ -281,8 +367,15 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
           
           {error && <ErrorMessage>{error}</ErrorMessage>}
           
-          <Button onClick={handleSave}>
-            {isConnected ? 'Update Configuration' : 'Test Connection & Save'}
+          {isLoading && (
+            <LoadingSpinner>
+              <div className="spinner" />
+              <div className="message">{loadingMessages[loadingStage]}</div>
+            </LoadingSpinner>
+          )}
+          
+          <Button onClick={handleSave} disabled={isLoading}>
+            {isLoading ? 'Configuring...' : isConnected ? 'Update Configuration' : 'Test Connection & Save'}
           </Button>
           
           {isConnected && (
