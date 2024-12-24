@@ -162,6 +162,7 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [loadingStage, setLoadingStage] = useState(0);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   
   const loadingMessages = [
     'Connecting to database...',
@@ -201,10 +202,22 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
     return true;
   };
 
-  const areRequiredFieldsFilled = () => {
-    if (dbType === 'default') return true;
-    return formData.host && formData.port && formData.database && formData.platform;
-  };
+  useEffect(() => {
+    if (dbType === 'default') {
+      setIsButtonDisabled(false);
+      return;
+    }
+    
+    const requiredFields = {
+      host: formData.host,
+      port: formData.port,
+      database: formData.database,
+      platform: formData.platform
+    };
+    
+    const hasAllRequired = Object.values(requiredFields).every(field => field && field.trim() !== '');
+    setIsButtonDisabled(!hasAllRequired);
+  }, [dbType, formData]);
 
   const handleSave = async () => {
     if (!validateForm()) return;
@@ -391,7 +404,7 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
           
           <Button 
             onClick={handleSave} 
-            disabled={isLoading || !areRequiredFieldsFilled()}
+            disabled={isLoading || isButtonDisabled}
           >
             {isLoading ? 'Configuring...' : isConnected ? 'Update Configuration' : 'Test Connection & Save'}
           </Button>
