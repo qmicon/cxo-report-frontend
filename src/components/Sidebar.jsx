@@ -78,6 +78,16 @@ const Button = styled.button`
   &:hover {
     background: #0056b3;
   }
+
+  &:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+    
+    &:hover {
+      background: #cccccc;
+    }
+  }
 `;
 
 const RadioGroup = styled.div`
@@ -189,6 +199,11 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
     }
     setError('');
     return true;
+  };
+
+  const areRequiredFieldsFilled = () => {
+    if (dbType === 'default') return true;
+    return formData.host && formData.port && formData.database && formData.platform;
   };
 
   const handleSave = async () => {
@@ -374,7 +389,10 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
             </LoadingSpinner>
           )}
           
-          <Button onClick={handleSave} disabled={isLoading}>
+          <Button 
+            onClick={handleSave} 
+            disabled={isLoading || !areRequiredFieldsFilled()}
+          >
             {isLoading ? 'Configuring...' : isConnected ? 'Update Configuration' : 'Test Connection & Save'}
           </Button>
           
