@@ -11,7 +11,8 @@ import DatabaseTables from './components/DatabaseTables';
 const Container = styled.div`
   display: grid;
   grid-template-columns: 80px minmax(0, 1fr) 300px;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 `;
 
 const MainContent = styled.div`
@@ -22,6 +23,8 @@ const MainContent = styled.div`
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
+  height: 100vh;
+  overflow-y: auto;
 `;
 
 const Button = styled.button`
@@ -120,18 +123,22 @@ const TableScrollWrapper = styled.div`
 
 function App() {
   const ROW_LIMIT = 10; // Configure row limit here
+  const mainContentRef = useRef(null); // Add this line
   const [tableDescriptions, setTableDescriptions] = useState({});
   const [queryHistory, setQueryHistory] = useState([]);
   const [currentView, setCurrentView] = useState('queries');
   const [title, setTitle] = useState('Reports');
+  const [dbConfig, setDbConfig] = useState(null);  // Add this line
   const chatRef = useRef();
 
-  const handleTablesUpdate = (descriptions) => {
+  const handleTablesUpdate = (descriptions, config) => {  // Add config parameter
     setTableDescriptions(descriptions);
+    setDbConfig(config);  // Store the db config
   };
 
   const handleQueryResults = (results, userQuery) => {
     setCurrentView('queries'); // Switch to queries view when results are received
+    scrollToTop();
     setQueryHistory(prev => [{
       id: Date.now(),
       timestamp: new Date().toLocaleString(),
@@ -231,6 +238,12 @@ function App() {
     return validRows;
   };
 
+  const scrollToTop = () => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <Container>
       <Sidebar 
@@ -239,7 +252,7 @@ function App() {
         onViewChange={setCurrentView}
         onTitleChange={setTitle}
       />
-      <MainContent>
+      <MainContent ref={mainContentRef}>
         <Header title={title} />
         {currentView === 'queries' ? (
           queryHistory.map((result, index) => {
@@ -288,7 +301,7 @@ function App() {
           <DatabaseTables tableDescriptions={tableDescriptions} />
         )}
       </MainContent>
-      <Chat ref={chatRef} onQueryResults={handleQueryResults} />
+      <Chat ref={chatRef} onQueryResults={handleQueryResults} dbConfig={dbConfig} />  {/* Add dbConfig prop */}
     </Container>
   );
 }

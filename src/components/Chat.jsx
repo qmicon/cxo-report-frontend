@@ -88,7 +88,7 @@ const SendButton = styled.button`
   justify-content: center;
 `;
 
-function Chat({ onQueryResults }, ref) {  // Add ref parameter
+function Chat({ onQueryResults, dbConfig }, ref) {  // Add dbConfig prop
   const [messages, setMessages] = useState([
     { text: "Hi, how can I help you analyze the revenue data?", isUser: false }
   ]);
@@ -97,7 +97,7 @@ function Chat({ onQueryResults }, ref) {  // Add ref parameter
   const messagesEndRef = useRef(null);
 
   const handleMessage = async (message) => {
-    if (!message.trim()) return;
+    if (!message.trim() || !dbConfig) return;  // Check for dbConfig
     
     try {
       setIsLoading(true);
@@ -111,7 +111,10 @@ function Chat({ onQueryResults }, ref) {  // Add ref parameter
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: message }),
+        body: JSON.stringify({ 
+          query: message,
+          dbConfig: dbConfig  // Add dbConfig to request
+        }),
       });
 
       const data = await response.json();

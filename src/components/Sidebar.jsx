@@ -4,17 +4,18 @@ import { RiDatabaseLine, RiCheckLine, RiTableLine, RiBarChartLine } from 'react-
 import { useState, useEffect } from 'react';
 
 const CLOUD_PLATFORMS = [
-  'Snowflake',
-  'Amazon Redshift',
-  'Google BigQuery',
-  'Azure Synapse',
-  'SAP HANA',
-  'Databricks Delta Lake',
-  'Starburst Trino',
-  'Presto',
-  'Oracle ADW',
-  'Teradata Vantage',
-  'Dremio'
+  // 'Snowflake',
+  // 'Amazon Redshift',
+  // 'Google BigQuery',
+  // 'Azure Synapse',
+  // 'SAP HANA',
+  // 'Databricks Delta Lake',
+  // 'Starburst Trino',
+  // 'Presto',
+  // 'Oracle ADW',
+  // 'Teradata Vantage',
+  // 'Dremio'
+  'PostgreSQL'
 ];
 
 const Nav = styled.nav`
@@ -197,7 +198,6 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
       setIsLoading(true);
       setLoadingStage(0);
       
-      // Artificial delay before making the API call
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const config = dbType === 'default' 
@@ -208,7 +208,8 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
             port: formData.port,
             database: formData.database,
             username: formData.username,
-            password: formData.password
+            password: formData.password,
+            platform: formData.platform
           };
 
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/configure-db`, {
@@ -222,13 +223,12 @@ function Sidebar({ onTablesUpdate, currentView, onViewChange, onTitleChange }) {
       const data = await response.json();
       
       if (data.status === 'success') {
-        // Add artificial delay after success before closing
         await new Promise(resolve => setTimeout(resolve, 5000));
         setIsConnected(true);
         setError('');
-        onTablesUpdate(data.table_descriptions);
-        handleViewChange('tables'); // Add this line to switch view
-        setShowConfig(false);   // Close config modal after success
+        onTablesUpdate(data.table_descriptions, config); // Pass config here
+        handleViewChange('tables');
+        setShowConfig(false);
       } else {
         throw new Error(data.message);
       }
